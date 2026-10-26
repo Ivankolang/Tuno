@@ -20,6 +20,8 @@ public class MainActivity extends Activity {
  Button tunerStart;
  boolean tunerTabActive=true;
  Gauge gauge;
+ ChordBoard chordBoard;
+ TextView chordResult;
  BeatLine beatLine;
  AudioRecord recorder;
  Thread listenThread, tickThread;
@@ -29,7 +31,12 @@ public class MainActivity extends Activity {
  void add(LinearLayout l,View v){l.addView(v,new LinearLayout.LayoutParams(-1,-2));}
  public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(bg);getWindow().setNavigationBarColor(bg);
  LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setBackgroundColor(bg);setContentView(root);
- LinearLayout tabs=new LinearLayout(this);tabs.setPadding(dp(8),dp(4),dp(8),dp(4));root.addView(tabs);Button tunerTab=button("Тюнер");Button metroTab=button("Метроном");tabs.addView(tunerTab,new LinearLayout.LayoutParams(0,dp(56),1));tabs.addView(metroTab,new LinearLayout.LayoutParams(0,dp(56),1));LinearLayout tunerPage=new LinearLayout(this);tunerPage.setOrientation(1);root.addView(tunerPage,new LinearLayout.LayoutParams(-1,0,1));LinearLayout metroPage=new LinearLayout(this);metroPage.setOrientation(1);root.addView(metroPage,new LinearLayout.LayoutParams(-1,0,1));metroPage.setVisibility(View.GONE);tunerTab.setOnClickListener(v->{tunerTabActive=true;tunerPage.setVisibility(View.VISIBLE);metroPage.setVisibility(View.GONE);startTunerIfAllowed();});metroTab.setOnClickListener(v->{tunerTabActive=false;tunerPage.setVisibility(View.GONE);metroPage.setVisibility(View.VISIBLE);stopTuner();});
+ LinearLayout tabs=new LinearLayout(this);tabs.setPadding(dp(8),dp(4),dp(8),dp(4));root.addView(tabs);Button tunerTab=button("Тюнер");Button metroTab=button("Метроном");Button chordTab=button("Аккорды");tabs.addView(tunerTab,new LinearLayout.LayoutParams(0,dp(56),1));tabs.addView(metroTab,new LinearLayout.LayoutParams(0,dp(56),1));tabs.addView(chordTab,new LinearLayout.LayoutParams(0,dp(56),1));LinearLayout tunerPage=new LinearLayout(this);tunerPage.setOrientation(1);root.addView(tunerPage,new LinearLayout.LayoutParams(-1,0,1));LinearLayout metroPage=new LinearLayout(this);metroPage.setOrientation(1);root.addView(metroPage,new LinearLayout.LayoutParams(-1,0,1));metroPage.setVisibility(View.GONE);ScrollView chordScroll=new ScrollView(this);root.addView(chordScroll,new LinearLayout.LayoutParams(-1,0,1));LinearLayout chordPage=new LinearLayout(this);chordPage.setOrientation(1);chordPage.setPadding(dp(12),dp(8),dp(12),dp(8));chordScroll.addView(chordPage);chordScroll.setVisibility(View.GONE);tunerTab.setOnClickListener(v->{tunerTabActive=true;tunerPage.setVisibility(View.VISIBLE);metroPage.setVisibility(View.GONE);chordScroll.setVisibility(View.GONE);startTunerIfAllowed();});metroTab.setOnClickListener(v->{tunerTabActive=false;tunerPage.setVisibility(View.GONE);metroPage.setVisibility(View.VISIBLE);chordScroll.setVisibility(View.GONE);stopTuner();});
+ chordTab.setOnClickListener(v->{tunerTabActive=false;tunerPage.setVisibility(View.GONE);metroPage.setVisibility(View.GONE);chordScroll.setVisibility(View.VISIBLE);stopTuner();});
+ add(chordPage,label("ОПРЕДЕЛИТЕЛЬ АККОРДОВ",20,green));add(chordPage,label("Нажимай на струны и лады. Верхний ряд — открытая струна. Долгое нажатие — заглушить.",13,0xffaeb8b2));
+ chordResult=label("Выбери лады",32,Color.WHITE);add(chordPage,chordResult);chordBoard=new ChordBoard();chordPage.addView(chordBoard,new LinearLayout.LayoutParams(-1,dp(390)));
+ Button barre=button("Баррэ: выкл.");add(chordPage,barre);barre.setOnClickListener(v->{chordBoard.barre=chordBoard.barre==0?1:chordBoard.barre==5?0:chordBoard.barre+1;barre.setText(chordBoard.barre==0?"Баррэ: выкл.":"Баррэ: "+chordBoard.barre+" лад");chordBoard.invalidate();chordBoard.updateChord();});
+ Button resetChord=button("Сбросить аппликатуру");add(chordPage,resetChord);resetChord.setOnClickListener(v->{chordBoard.frets=new int[]{0,0,0,0,0,0};chordBoard.barre=0;barre.setText("Баррэ: выкл.");chordBoard.invalidate();chordBoard.updateChord();});
  add(tunerPage,label("CHROMATIC  •  STANDARD",14,0xffa9b1b7));
  gauge=new Gauge();tunerPage.addView(gauge,new LinearLayout.LayoutParams(-1,dp(235)));
  note=label("—",75,Color.WHITE);add(tunerPage,note);
@@ -57,6 +64,13 @@ public class MainActivity extends Activity {
 
  }
  
+
+ class ChordBoard extends View{
+  Paint p=new Paint(3);int[] frets={0,0,0,0,0,0};int barre=0;final int[] tuning={4,9,2,7,11,4};
+  ChordBoard(){super(MainActivity.this);setBackgroundColor(0xff151a17);setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_UP){float sx=getWidth()*.12f,sy=getHeight()*.10f,dx=getWidth()*.76f/5f,dy=getHeight()*.80f/6f;int string=Math.max(0,Math.min(5,Math.round((e.getX()-sx)/dx)));int fret=Math.max(0,Math.min(5,(int)((e.getY()-sy)/dy)));frets[string]=fret;invalidate();updateChord();return true;}return true;});}
+  void updateChord(){int[] count=new int[12];int bass=-1;for(int i=0;i<6;i++){if(frets[i]<0)continue;int f=Math.max(frets[i],barre);int n=(tuning[i]+f)%12;count[n]++;if(bass<0)bass=n;}String[] names={"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};String best="Неизвестный аккорд";int score=0;String[] types={"","m","dim","aug","sus2","sus4","7","m7","maj7"};int[][] intervals={{0,4,7},{0,3,7},{0,3,6},{0,4,8},{0,2,7},{0,5,7},{0,4,7,10},{0,3,7,10},{0,4,7,11}};for(int root=0;root<12;root++)for(int t=0;t<types.length;t++){int hits=0,extra=0;for(int n=0;n<12;n++)if(count[n]>0){boolean ok=false;for(int iv:intervals[t])if((root+iv)%12==n)ok=true;if(ok)hits++;else extra++;}boolean complete=true;for(int iv:intervals[t])if(count[(root+iv)%12]==0)complete=false;int s=hits*3-extra*6+(complete?8:0)+(bass==root?2:0);if(complete&&s>score){score=s;best=names[root]+types[t];}}chordResult.setText(best);}
+  protected void onDraw(Canvas c){super.onDraw(c);float sx=getWidth()*.12f,sy=getHeight()*.10f,dx=getWidth()*.76f/5f,dy=getHeight()*.80f/6f;p.setTextAlign(Paint.Align.CENTER);p.setTextSize(dp(14));for(int i=0;i<6;i++){float x=sx+i*dx;p.setColor(0xffb0c4b8);p.setStrokeWidth(dp(i<3?2:1));c.drawLine(x,sy+dy,x,sy+dy*6,p);p.setColor(Color.WHITE);c.drawText(new String[]{"E","A","D","G","B","e"}[i],x,sy-dp(8),p);}for(int j=1;j<=6;j++){float y=sy+j*dy;p.setColor(0xff85998b);p.setStrokeWidth(dp(j==1?4:1));c.drawLine(sx,y,sx+dx*5,y,p);p.setColor(Color.WHITE);if(j<6)c.drawText(""+j,sx-dp(23),y+dy*.55f,p);}if(barre>0){p.setColor(0xff39db8a);p.setStrokeWidth(dp(12));float y=sy+(barre+.5f)*dy;c.drawLine(sx,y,sx+5*dx,y,p);}for(int i=0;i<6;i++){int f=frets[i];if(f<0)continue;float x=sx+i*dx,y=sy+(f==0?0:(f+.5f)*dy);p.setColor(0xff39db8a);c.drawCircle(x,y,dp(8),p);}}
+ }
  class Gauge extends View {
   Paint p=new Paint(3);float cents=0,displayedCents=0;
   Gauge(){super(MainActivity.this);setBackgroundColor(0xff101215);}
@@ -71,7 +85,7 @@ public class MainActivity extends Activity {
  class BeatLine extends View{
   Paint p=new Paint(3);int position=0;long beatStart=0;
   BeatLine(){super(MainActivity.this);setBackgroundColor(0xff101215);}
-  protected void onDraw(Canvas c){super.onDraw(c);float x=getWidth()/2f;if(ticking){float progress=Math.min(1f,(android.os.SystemClock.elapsedRealtime()-beatStart)/(60000f/bpm));float sway=(float)Math.sin(progress*Math.PI);x+=((position%2==0)?1:-1)*sway*getWidth()*.30f;postInvalidateDelayed(16);}p.setColor(0xff1ab9e6);p.setStrokeWidth(dp(6));c.drawLine(x,0,x,getHeight(),p);}
+  protected void onDraw(Canvas c){super.onDraw(c);float x=getWidth()/2f;if(ticking){float progress=Math.min(1f,(android.os.SystemClock.elapsedRealtime()-beatStart)/(60000f/bpm));float sway=(float)Math.sin(progress*Math.PI);x+=((position%2==0)?1:-1)*sway*getWidth()*.30f;postInvalidateDelayed(16);}p.setColor(0xff1ab9e6);p.setStrokeWidth(dp(12));c.drawLine(x,0,x,getHeight(),p);}
  }
  void startTunerIfAllowed(){if(listening)return;if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},1);return;}listening=true;tunerStart.setText("Остановить тюнер");guide.setText("Слушаю гитару…");listenThread=new Thread(this::listen);listenThread.start();}
  @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==1&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED&&tunerTabActive)startTunerIfAllowed();}
