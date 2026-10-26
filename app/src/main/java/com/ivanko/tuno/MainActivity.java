@@ -28,9 +28,8 @@ public class MainActivity extends Activity {
  Button button(String s){Button b=new Button(this);b.setText(s);b.setAllCaps(false);b.setTextColor(Color.BLACK);b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(green));return b;}
  void add(LinearLayout l,View v){l.addView(v,new LinearLayout.LayoutParams(-1,-2));}
  public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(bg);getWindow().setNavigationBarColor(bg);
- ScrollView scroll=new ScrollView(this);LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(dp(20),dp(12),dp(20),dp(25));root.setBackgroundColor(bg);scroll.addView(root);setContentView(scroll);
- add(root,label("TUNO",35,green));add(root,label("ТЮНЕР  •  МЕТРОНОМ",14,0xffa5b9aa));
- LinearLayout tabs=new LinearLayout(this);root.addView(tabs);Button tunerTab=button("Тюнер");Button metroTab=button("Метроном");tabs.addView(tunerTab,new LinearLayout.LayoutParams(0,dp(56),1));tabs.addView(metroTab,new LinearLayout.LayoutParams(0,dp(56),1));LinearLayout tunerPage=new LinearLayout(this);tunerPage.setOrientation(1);root.addView(tunerPage);LinearLayout metroPage=new LinearLayout(this);metroPage.setOrientation(1);root.addView(metroPage);metroPage.setVisibility(View.GONE);tunerTab.setOnClickListener(v->{tunerTabActive=true;tunerPage.setVisibility(View.VISIBLE);metroPage.setVisibility(View.GONE);startTunerIfAllowed();});metroTab.setOnClickListener(v->{tunerTabActive=false;tunerPage.setVisibility(View.GONE);metroPage.setVisibility(View.VISIBLE);stopTuner();});
+ LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setBackgroundColor(bg);setContentView(root);
+ LinearLayout tabs=new LinearLayout(this);tabs.setPadding(dp(8),dp(4),dp(8),dp(4));root.addView(tabs);Button tunerTab=button("Тюнер");Button metroTab=button("Метроном");tabs.addView(tunerTab,new LinearLayout.LayoutParams(0,dp(56),1));tabs.addView(metroTab,new LinearLayout.LayoutParams(0,dp(56),1));LinearLayout tunerPage=new LinearLayout(this);tunerPage.setOrientation(1);root.addView(tunerPage,new LinearLayout.LayoutParams(-1,0,1));LinearLayout metroPage=new LinearLayout(this);metroPage.setOrientation(1);root.addView(metroPage,new LinearLayout.LayoutParams(-1,0,1));metroPage.setVisibility(View.GONE);tunerTab.setOnClickListener(v->{tunerTabActive=true;tunerPage.setVisibility(View.VISIBLE);metroPage.setVisibility(View.GONE);startTunerIfAllowed();});metroTab.setOnClickListener(v->{tunerTabActive=false;tunerPage.setVisibility(View.GONE);metroPage.setVisibility(View.VISIBLE);stopTuner();});
  add(tunerPage,label("CHROMATIC  •  STANDARD",14,0xffa9b1b7));
  gauge=new Gauge();tunerPage.addView(gauge,new LinearLayout.LayoutParams(-1,dp(235)));
  note=label("—",75,Color.WHITE);add(tunerPage,note);
@@ -38,8 +37,8 @@ public class MainActivity extends Activity {
  guide=label("Нажми «Включить тюнер»",16,0xffb8c7be);add(tunerPage,guide);
  tunerStart=button("Включить тюнер");add(tunerPage,tunerStart);tunerStart.setOnClickListener(v->{if(listening){stopTuner();tunerStart.setText("Включить тюнер");}else startTunerIfAllowed();});
 
- add(metroPage,label("Default",18,Color.WHITE));
- beatLine=new BeatLine();metroPage.addView(beatLine,new LinearLayout.LayoutParams(-1,dp(330)));
+
+ beatLine=new BeatLine();metroPage.addView(beatLine,new LinearLayout.LayoutParams(-1,0,1));
  LinearLayout tempoRow=new LinearLayout(this);tempoRow.setGravity(Gravity.CENTER_VERTICAL);tempoRow.setBackgroundColor(0xff202020);metroPage.addView(tempoRow,new LinearLayout.LayoutParams(-1,dp(104)));
  Button minus=button("⊖");Button plus=button("⊕");for(Button btn:new Button[]{minus,plus}){btn.setTextSize(27);btn.setTextColor(0xffa5a5a5);btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff202020));}
  tempo=label("120",65,Color.WHITE);tempoRow.addView(minus,new LinearLayout.LayoutParams(dp(72),-1));tempoRow.addView(tempo,new LinearLayout.LayoutParams(0,-1,1));tempoRow.addView(plus,new LinearLayout.LayoutParams(dp(72),-1));
@@ -54,9 +53,7 @@ public class MainActivity extends Activity {
  pulse=label("",12,green);pulse.setVisibility(View.GONE);metroPage.addView(pulse);
  play.setOnClickListener(v->{if(!ticking){ticking=true;tickThread=new Thread(this::tick);tickThread.start();}});
  stop.setOnClickListener(v->{ticking=false;beatLine.invalidate();});
- LinearLayout bottom=new LinearLayout(this);bottom.setBackgroundColor(Color.BLACK);metroPage.addView(bottom,new LinearLayout.LayoutParams(-1,dp(62)));
- String[] tools={"Tempo","Subdivisions","Accents","Trainer","Settings"};
- for(int i=0;i<tools.length;i++){final int index=i;Button item=button((i==0?"△":i==1?"♫":i==2?"♬":i==3?"◉":"⚙")+"\n"+tools[i]);item.setTextSize(10);item.setTextColor(i==0?0xff24b4f0:0xffb7b7b7);item.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.BLACK));bottom.addView(item,new LinearLayout.LayoutParams(0,-1,1));item.setOnClickListener(v->{if(index==0)return;if(index==1){beats=beats==4?3:beats==3?2:beats==2?6:4;Toast.makeText(this,"Размер: "+beats+(beats==6?"/8":"/4"),Toast.LENGTH_SHORT).show();}else if(index==4){EditText field=new EditText(this);field.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);field.setText(""+bpm);new android.app.AlertDialog.Builder(this).setTitle("Точный BPM (20–240)").setView(field).setPositiveButton("OK",(d,w)->{try{int n=Integer.parseInt(field.getText().toString());if(n>=20&&n<=240){bpm=n;tempo.setText(""+bpm);}}catch(Exception ignored){}}).setNegativeButton("Отмена",null).show();}else Toast.makeText(this,"Раздел в разработке",Toast.LENGTH_SHORT).show();});}
+
 
  }
  
@@ -74,7 +71,7 @@ public class MainActivity extends Activity {
  class BeatLine extends View{
   Paint p=new Paint(3);int position=0;long beatStart=0;
   BeatLine(){super(MainActivity.this);setBackgroundColor(0xff101215);}
-  protected void onDraw(Canvas c){super.onDraw(c);float x=getWidth()/2f;if(ticking){float progress=Math.min(1f,(android.os.SystemClock.elapsedRealtime()-beatStart)/(60000f/bpm));float sway=(float)Math.sin(progress*Math.PI);x+=((position%2==0)?1:-1)*sway*getWidth()*.30f;postInvalidateDelayed(16);}p.setColor(0xff1ab9e6);p.setStrokeWidth(dp(6));c.drawLine(x,dp(12),x,getHeight()-dp(12),p);}
+  protected void onDraw(Canvas c){super.onDraw(c);float x=getWidth()/2f;if(ticking){float progress=Math.min(1f,(android.os.SystemClock.elapsedRealtime()-beatStart)/(60000f/bpm));float sway=(float)Math.sin(progress*Math.PI);x+=((position%2==0)?1:-1)*sway*getWidth()*.30f;postInvalidateDelayed(16);}p.setColor(0xff1ab9e6);p.setStrokeWidth(dp(6));c.drawLine(x,0,x,getHeight(),p);}
  }
  void startTunerIfAllowed(){if(listening)return;if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},1);return;}listening=true;tunerStart.setText("Остановить тюнер");guide.setText("Слушаю гитару…");listenThread=new Thread(this::listen);listenThread.start();}
  @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==1&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED&&tunerTabActive)startTunerIfAllowed();}
