@@ -42,30 +42,34 @@ public class MainActivity extends Activity {
  LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER);metroPage.addView(row);
  Button minus=button("−");Button plus=button("+");Button sig=button("4/4");
  for(Button x:new Button[]{minus,sig,plus})row.addView(x,new LinearLayout.LayoutParams(0,dp(55),1));
- minus.setOnClickListener(v->{bpm=Math.max(20,bpm-5);tempo.setText(""+bpm);});
- plus.setOnClickListener(v->{bpm=Math.min(240,bpm+5);tempo.setText(""+bpm);});
+ minus.setOnClickListener(v->{bpm=Math.max(20,bpm-1);tempo.setText(""+bpm);});
+ plus.setOnClickListener(v->{bpm=Math.min(240,bpm+1);tempo.setText(""+bpm);});
  sig.setOnClickListener(v->{beats=beats==4?3:beats==3?2:beats==2?6:4;sig.setText(beats+(beats==6?"/8":"/4"));});
  add(metroPage,label("ТЕМП",13,0xff9ca4ac));
  HorizontalScrollView presetsScroll=new HorizontalScrollView(this);presetsScroll.setHorizontalScrollBarEnabled(false);metroPage.addView(presetsScroll);
  LinearLayout presets=new LinearLayout(this);presetsScroll.addView(presets);
  String[] presetNames={"Largo","Adagio","Andante","Moderato","Allegro","Presto","Prestissimo"};
  int[] presetBpms={45,66,84,108,132,176,208};
- for(int i=0;i<presetNames.length;i++){final int v=presetBpms[i];Button preset=button(presetNames[i]);presets.addView(preset,new LinearLayout.LayoutParams(dp(112),dp(56)));preset.setOnClickListener(w->{bpm=v;tempo.setText(""+bpm);});}
+ for(int i=0;i<presetNames.length;i++){final int v=presetBpms[i];Button preset=button(presetNames[i]);preset.setTextSize(11);preset.setTextColor(0xffaab1b9);preset.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff24272b));presets.addView(preset,new LinearLayout.LayoutParams(dp(88),dp(38)));preset.setOnClickListener(w->{bpm=v;tempo.setText(""+bpm);});}
  add(metroPage,label("Точное значение BPM (например: 98, 63, 23)",13,0xff9ca4ac));
  EditText customBpm=new EditText(this);customBpm.setSingleLine(true);customBpm.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);customBpm.setHint("Введите BPM");customBpm.setTextColor(Color.WHITE);customBpm.setHintTextColor(0xffa0a0a0);metroPage.addView(customBpm);
  Button applyBpm=button("Установить BPM");add(metroPage,applyBpm);applyBpm.setOnClickListener(v->{try{int n=Integer.parseInt(customBpm.getText().toString().trim());if(n<20||n>240){Toast.makeText(this,"Допустимо 20–240 BPM",Toast.LENGTH_SHORT).show();return;}bpm=n;tempo.setText(""+bpm);}catch(NumberFormatException e){Toast.makeText(this,"Введите число",Toast.LENGTH_SHORT).show();}});
  pulse=label("●",26,green);add(metroPage,pulse);
- Button play=button("Запустить метроном");add(metroPage,play);play.setOnClickListener(v->{ticking=!ticking;play.setText(ticking?"Остановить метроном":"Запустить метроном");if(ticking){tickThread=new Thread(this::tick);tickThread.start();}});
+ LinearLayout controls=new LinearLayout(this);metroPage.addView(controls);
+ Button play=button("Start");Button stop=button("Stop");stop.setTextColor(Color.WHITE);stop.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xffcc2434));
+ controls.addView(play,new LinearLayout.LayoutParams(0,dp(56),1));controls.addView(stop,new LinearLayout.LayoutParams(0,dp(56),1));
+ play.setOnClickListener(v->{if(!ticking){ticking=true;tickThread=new Thread(this::tick);tickThread.start();}});
+ stop.setOnClickListener(v->{ticking=false;beatLine.invalidate();pulse.setText("●");});
  }
  
  class Gauge extends View {
-  Paint p=new Paint(3);float cents=0;
-  Gauge(){super(MainActivity.this);setBackgroundColor(0xfff5f5f4);}
-  protected void onDraw(Canvas c){super.onDraw(c);float w=getWidth(),h=getHeight(),cx=w/2f,cy=h*.92f,r=Math.min(w*.43f,h*.73f);
+  Paint p=new Paint(3);float cents=0,displayedCents=0;
+  Gauge(){super(MainActivity.this);setBackgroundColor(0xff101215);}
+  protected void onDraw(Canvas c){super.onDraw(c);displayedCents+=(cents-displayedCents)*.14f;if(Math.abs(cents-displayedCents)>.08f)postInvalidateDelayed(16);float w=getWidth(),h=getHeight(),cx=w/2f,cy=h*.92f,r=Math.min(w*.43f,h*.73f);
    p.setTextAlign(Paint.Align.CENTER);p.setStrokeWidth(dp(1));p.setTextSize(dp(13));
-   for(int i=-30;i<=30;i++){double a=Math.toRadians(-90+i*1.7);float x=(float)Math.cos(a),y=(float)Math.sin(a);p.setColor(i==0?0xff24292c:0xff929a9c);p.setStrokeWidth(i%5==0?dp(2):dp(1));c.drawLine(cx+x*r,cy+y*r,cx+x*(r-(i%5==0?dp(22):dp(12))),cy+y*(r-(i%5==0?dp(22):dp(12))),p);
-    if(i%10==0){p.setColor(0xff60696c);p.setTextSize(dp(11));c.drawText(""+i,cx+x*(r+dp(17)),cy+y*(r+dp(17))+dp(4),p);}}
-   double a=Math.toRadians(-90+Math.max(-30,Math.min(30,cents))*1.7);p.setColor(0xff09a9cc);p.setStrokeWidth(dp(2));c.drawLine(cx,cy,cx+(float)Math.cos(a)*r*1.07f,cy+(float)Math.sin(a)*r*1.07f,p);
+   for(int i=-30;i<=30;i++){double a=Math.toRadians(-90+i*1.7);float x=(float)Math.cos(a),y=(float)Math.sin(a);p.setColor(i==0?0xffe4e8e9:0xff657177);p.setStrokeWidth(i%5==0?dp(2):dp(1));c.drawLine(cx+x*r,cy+y*r,cx+x*(r-(i%5==0?dp(22):dp(12))),cy+y*(r-(i%5==0?dp(22):dp(12))),p);
+    if(i%10==0){p.setColor(0xffaab6ba);p.setTextSize(dp(11));c.drawText(""+i,cx+x*(r+dp(17)),cy+y*(r+dp(17))+dp(4),p);}}
+   double a=Math.toRadians(-90+Math.max(-30,Math.min(30,displayedCents))*1.7);p.setColor(0xff09a9cc);p.setStrokeWidth(dp(2));c.drawLine(cx,cy,cx+(float)Math.cos(a)*r*1.07f,cy+(float)Math.sin(a)*r*1.07f,p);
    p.setColor(0xff60696c);p.setTextSize(dp(12));c.drawText("CENTS",cx,dp(32),p);
   }
  }
