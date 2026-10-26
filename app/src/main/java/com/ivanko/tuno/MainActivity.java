@@ -38,28 +38,26 @@ public class MainActivity extends Activity {
  guide=label("Нажми «Включить тюнер»",16,0xffb8c7be);add(tunerPage,guide);
  tunerStart=button("Включить тюнер");add(tunerPage,tunerStart);tunerStart.setOnClickListener(v->{if(listening){stopTuner();tunerStart.setText("Включить тюнер");}else startTunerIfAllowed();});
 
- add(metroPage,label("TEMPO  •  METRONOME",14,0xffa9b1b7));beatLine=new BeatLine();metroPage.addView(beatLine,new LinearLayout.LayoutParams(-1,dp(255)));tempo=label("100",64,Color.WHITE);add(metroPage,tempo);add(metroPage,label("BPM",15,0xff9ca4ac));
- LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER);metroPage.addView(row);
- Button minus=button("−");Button plus=button("+");Button sig=button("4/4");
- for(Button x:new Button[]{minus,sig,plus})row.addView(x,new LinearLayout.LayoutParams(0,dp(55),1));
- minus.setOnClickListener(v->{bpm=Math.max(20,bpm-1);tempo.setText(""+bpm);});
- plus.setOnClickListener(v->{bpm=Math.min(240,bpm+1);tempo.setText(""+bpm);});
- sig.setOnClickListener(v->{beats=beats==4?3:beats==3?2:beats==2?6:4;sig.setText(beats+(beats==6?"/8":"/4"));});
- add(metroPage,label("ТЕМП",13,0xff9ca4ac));
- HorizontalScrollView presetsScroll=new HorizontalScrollView(this);presetsScroll.setHorizontalScrollBarEnabled(false);metroPage.addView(presetsScroll);
+ add(metroPage,label("Default",18,Color.WHITE));
+ beatLine=new BeatLine();metroPage.addView(beatLine,new LinearLayout.LayoutParams(-1,dp(330)));
+ LinearLayout tempoRow=new LinearLayout(this);tempoRow.setGravity(Gravity.CENTER_VERTICAL);tempoRow.setBackgroundColor(0xff202020);metroPage.addView(tempoRow,new LinearLayout.LayoutParams(-1,dp(104)));
+ Button minus=button("⊖");Button plus=button("⊕");for(Button btn:new Button[]{minus,plus}){btn.setTextSize(27);btn.setTextColor(0xffa5a5a5);btn.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff202020));}
+ tempo=label("120",65,Color.WHITE);tempoRow.addView(minus,new LinearLayout.LayoutParams(dp(72),-1));tempoRow.addView(tempo,new LinearLayout.LayoutParams(0,-1,1));tempoRow.addView(plus,new LinearLayout.LayoutParams(dp(72),-1));
+ bpm=120;minus.setOnClickListener(v->{bpm=Math.max(20,bpm-1);tempo.setText(""+bpm);});plus.setOnClickListener(v->{bpm=Math.min(240,bpm+1);tempo.setText(""+bpm);});
+ HorizontalScrollView presetsScroll=new HorizontalScrollView(this);presetsScroll.setHorizontalScrollBarEnabled(false);presetsScroll.setBackgroundColor(0xff252727);metroPage.addView(presetsScroll,new LinearLayout.LayoutParams(-1,dp(51)));
  LinearLayout presets=new LinearLayout(this);presetsScroll.addView(presets);
- String[] presetNames={"Largo","Adagio","Andante","Moderato","Allegro","Presto","Prestissimo"};
- int[] presetBpms={45,66,84,108,132,176,208};
- for(int i=0;i<presetNames.length;i++){final int v=presetBpms[i];Button preset=button(presetNames[i]);preset.setTextSize(11);preset.setTextColor(0xffaab1b9);preset.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff24272b));presets.addView(preset,new LinearLayout.LayoutParams(dp(88),dp(38)));preset.setOnClickListener(w->{bpm=v;tempo.setText(""+bpm);});}
- add(metroPage,label("Точное значение BPM (например: 98, 63, 23)",13,0xff9ca4ac));
- EditText customBpm=new EditText(this);customBpm.setSingleLine(true);customBpm.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);customBpm.setHint("Введите BPM");customBpm.setTextColor(Color.WHITE);customBpm.setHintTextColor(0xffa0a0a0);metroPage.addView(customBpm);
- Button applyBpm=button("Установить BPM");add(metroPage,applyBpm);applyBpm.setOnClickListener(v->{try{int n=Integer.parseInt(customBpm.getText().toString().trim());if(n<20||n>240){Toast.makeText(this,"Допустимо 20–240 BPM",Toast.LENGTH_SHORT).show();return;}bpm=n;tempo.setText(""+bpm);}catch(NumberFormatException e){Toast.makeText(this,"Введите число",Toast.LENGTH_SHORT).show();}});
- pulse=label("●",26,green);add(metroPage,pulse);
- LinearLayout controls=new LinearLayout(this);metroPage.addView(controls);
- Button play=button("Start");Button stop=button("Stop");stop.setTextColor(Color.WHITE);stop.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xffcc2434));
- controls.addView(play,new LinearLayout.LayoutParams(0,dp(56),1));controls.addView(stop,new LinearLayout.LayoutParams(0,dp(56),1));
+ String[] presetNames={"Largo","Adagio","Andante","Moderato","Allegro","Presto","Prestissimo"};int[] presetBpms={45,66,84,108,132,176,208};
+ for(int i=0;i<presetNames.length;i++){final int v=presetBpms[i];Button preset=button(presetNames[i]);preset.setAllCaps(false);preset.setTextSize(13);preset.setTextColor(v==132?Color.WHITE:0xff858585);preset.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff252727));presets.addView(preset,new LinearLayout.LayoutParams(dp(92),dp(49)));preset.setOnClickListener(w->{bpm=v;tempo.setText(""+bpm);});}
+ LinearLayout controls=new LinearLayout(this);controls.setPadding(dp(7),dp(20),dp(7),dp(20));controls.setBackgroundColor(0xff222222);metroPage.addView(controls);
+ Button play=button("Start"),stop=button("Stop");play.setTextSize(21);stop.setTextSize(21);play.setTextColor(0xffeeeeee);stop.setTextColor(Color.WHITE);play.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff777777));stop.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xffcf2634));
+ LinearLayout.LayoutParams cp1=new LinearLayout.LayoutParams(0,dp(62),1);cp1.setMargins(0,0,dp(8),0);LinearLayout.LayoutParams cp2=new LinearLayout.LayoutParams(0,dp(62),1);cp2.setMargins(dp(8),0,0,0);controls.addView(play,cp1);controls.addView(stop,cp2);
+ pulse=label("",12,green);pulse.setVisibility(View.GONE);metroPage.addView(pulse);
  play.setOnClickListener(v->{if(!ticking){ticking=true;tickThread=new Thread(this::tick);tickThread.start();}});
- stop.setOnClickListener(v->{ticking=false;beatLine.invalidate();pulse.setText("●");});
+ stop.setOnClickListener(v->{ticking=false;beatLine.invalidate();});
+ LinearLayout bottom=new LinearLayout(this);bottom.setBackgroundColor(Color.BLACK);metroPage.addView(bottom,new LinearLayout.LayoutParams(-1,dp(62)));
+ String[] tools={"Tempo","Subdivisions","Accents","Trainer","Settings"};
+ for(int i=0;i<tools.length;i++){final int index=i;Button item=button((i==0?"△":i==1?"♫":i==2?"♬":i==3?"◉":"⚙")+"\n"+tools[i]);item.setTextSize(10);item.setTextColor(i==0?0xff24b4f0:0xffb7b7b7);item.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.BLACK));bottom.addView(item,new LinearLayout.LayoutParams(0,-1,1));item.setOnClickListener(v->{if(index==0)return;if(index==1){beats=beats==4?3:beats==3?2:beats==2?6:4;Toast.makeText(this,"Размер: "+beats+(beats==6?"/8":"/4"),Toast.LENGTH_SHORT).show();}else if(index==4){EditText field=new EditText(this);field.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);field.setText(""+bpm);new android.app.AlertDialog.Builder(this).setTitle("Точный BPM (20–240)").setView(field).setPositiveButton("OK",(d,w)->{try{int n=Integer.parseInt(field.getText().toString());if(n>=20&&n<=240){bpm=n;tempo.setText(""+bpm);}}catch(Exception ignored){}}).setNegativeButton("Отмена",null).show();}else Toast.makeText(this,"Раздел в разработке",Toast.LENGTH_SHORT).show();});}
+
  }
  
  class Gauge extends View {
