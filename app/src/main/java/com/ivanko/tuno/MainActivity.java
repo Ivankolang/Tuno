@@ -34,7 +34,12 @@ public class MainActivity extends Activity {
  Thread listenThread, tickThread;
  int dp(int n){return (int)(n*getResources().getDisplayMetrics().density);}
  TextView label(String s,int size,int color){TextView v=new TextView(this);v.setText(s);v.setTextSize(size);v.setTextColor(color);v.setGravity(Gravity.CENTER);v.setPadding(dp(5),dp(8),dp(5),dp(8));return v;}
- Button button(String s){Button b=new Button(this);b.setText(s);b.setAllCaps(false);b.setTextColor(Color.BLACK);b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(green));return b;}
+ Button button(String s){Button b=new Button(this);b.setText(s);b.setAllCaps(false);
+ if(s.equals("Start")||s.equals("Stop")){b.setTextColor(Color.BLACK);b.setBackgroundTintList(android.content.res.ColorStateList.valueOf(green));return b;}
+ b.setTextSize(14);b.setTypeface(android.graphics.Typeface.create("sans-serif-medium",android.graphics.Typeface.NORMAL));b.setTextColor(0xffd6ffe6);
+ android.graphics.drawable.GradientDrawable shape=new android.graphics.drawable.GradientDrawable();shape.setColor(0xff253a30);shape.setCornerRadius(dp(22));shape.setStroke(dp(1),0xff3c6350);
+ android.graphics.drawable.RippleDrawable ripple=new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x6644d98b),shape,null);
+ b.setBackground(ripple);b.setBackgroundTintList(null);b.setElevation(dp(1));b.setPadding(dp(10),dp(6),dp(10),dp(6));return b;}
  void add(LinearLayout l,View v){l.addView(v,new LinearLayout.LayoutParams(-1,-2));}
  public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(bg);getWindow().setNavigationBarColor(bg);
  LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setBackgroundColor(bg);setContentView(root);
