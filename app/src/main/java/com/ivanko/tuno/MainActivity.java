@@ -34,6 +34,8 @@ public class MainActivity extends Activity {
  final String[] instrumentNames={"Гитара (6 струн)","Домра малая (3 струны)","Домра альтовая (4 струны)","Укулеле (4 струны)","Бас-гитара (4 струны)"};
  final int[][] instrumentMidi={{40,45,50,55,59,64},{64,69,74},{55,62,69,76},{67,60,64,69},{28,33,38,43}};
  TextView tunerHeading;
+ LinearLayout tunerSettings;
+ boolean chordListening=false;
  TextView smartStrings,practiceStatus,recognitionStatus;
  volatile int[] activeTuning=null;
  boolean acceleration=false;
@@ -68,18 +70,18 @@ public class MainActivity extends Activity {
  add(chordPage,label("БИБЛИОТЕКА И ГЕНЕРАТОР",17,green));
  LinearLayout libraryRow=new LinearLayout(this);chordPage.addView(libraryRow);
  Button library=button("Библиотека"),generate=button("Случайный");libraryRow.addView(library,new LinearLayout.LayoutParams(0,dp(52),1));libraryRow.addView(generate,new LinearLayout.LayoutParams(0,dp(52),1));
- library.setOnClickListener(v->{String[] chords={"C","Cm","C7","Cmaj7","D","Dm","D7","E","Em","E7","F","Fm","F7","G","Gm","G7","A","Am","A7","B","Bm","Bm7","Bb","F#m","C#m","Eb","Ab"};new android.app.AlertDialog.Builder(this).setTitle("Библиотека аккордов").setItems(chords,(d,i)->{chordInput.setText(chords[i]);chordBoard.showNamedChord(chords[i]);}).show();});
+ library.setOnClickListener(v->showChordLibrary(chordInput));
  generate.setOnClickListener(v->{String[] names={"C","D","E","F","G","A","Am","Dm","Em","G7","C7","Bm","F#m","Bb"};String selected=names[random.nextInt(names.length)];chordInput.setText(selected);chordBoard.showNamedChord(selected);});
  recognitionStatus=label("Распознавание по звуку: экспериментально",13,0xffaeb8b2);add(chordPage,recognitionStatus);
- Button recognize=button("Распознать сыгранный аккорд");add(chordPage,recognize);recognize.setOnClickListener(v->recognizeChord());
+ Button recognize=button("🎙 Слушать аккорд");add(chordPage,recognize);recognize.setOnClickListener(v->{if(chordListening)return;chordListening=true;recognize.setEnabled(false);recognitionStatus.setText("Сыграй аккорд и удерживай звук 2 секунды…");recognizeChord(()->{chordListening=false;recognize.setEnabled(true);});});
  Button resetChord=button("Сбросить аппликатуру");add(chordPage,resetChord);resetChord.setOnClickListener(v->{chordBoard.frets=new int[]{0,0,0,0,0,0};chordBoard.barre=0;barre.setText("Баррэ: выкл.");chordBoard.invalidate();chordBoard.updateChord();});
- tunerHeading=label("CHROMATIC  •  STANDARD",14,0xffa9b1b7);add(tunerPage,tunerHeading);
- LinearLayout tunerOptions=new LinearLayout(this);tunerPage.addView(tunerOptions,new LinearLayout.LayoutParams(-1,dp(54)));
+ tunerHeading=label("CHROMATIC  •  STANDARD",14,0xffa9b1b7);
+ tunerSettings=new LinearLayout(this);tunerSettings.setOrientation(1);LinearLayout tunerOptions=new LinearLayout(this);tunerSettings.addView(tunerOptions,new LinearLayout.LayoutParams(-1,dp(54)));
  Button reference=button("A4 = 440 Гц");Button language=button("Ноты: EN");
  tunerOptions.addView(reference,new LinearLayout.LayoutParams(0,-1,1));tunerOptions.addView(language,new LinearLayout.LayoutParams(0,-1,1));
  reference.setOnClickListener(v->{String[] values={"432 Гц","435 Гц","438 Гц","440 Гц","442 Гц","444 Гц","446 Гц"};new android.app.AlertDialog.Builder(this).setTitle("Опорная частота ноты Ля (A4)").setItems(values,(d,which)->{referenceHz=new int[]{432,435,438,440,442,444,446}[which];reference.setText("A4 = "+referenceHz+" Гц");}).show();});
  language.setOnClickListener(v->{russianNotes=!russianNotes;language.setText(russianNotes?"Ноты: RU":"Ноты: EN");tunerHeading.setText(russianNotes?"ХРОМАТИЧЕСКИЙ ТЮНЕР":"CHROMATIC  •  STANDARD");});
- LinearLayout instrumentOptions=new LinearLayout(this);tunerPage.addView(instrumentOptions,new LinearLayout.LayoutParams(-1,dp(52)));
+ LinearLayout instrumentOptions=new LinearLayout(this);tunerSettings.addView(instrumentOptions,new LinearLayout.LayoutParams(-1,dp(52)));
  Button instrumentButton=button("Инструмент: Гитара");Button stringButton=button("Струна: выкл.");
  instrumentOptions.addView(instrumentButton,new LinearLayout.LayoutParams(0,-1,1));instrumentOptions.addView(stringButton,new LinearLayout.LayoutParams(0,-1,1));
  activeTuning=instrumentMidi[0].clone();
@@ -98,19 +100,20 @@ public class MainActivity extends Activity {
  });
  stringButton.setOnClickListener(v->{showStringNumber=!showStringNumber;stringButton.setText(showStringNumber?"Струна: вкл.":"Струна: выкл.");stringInfo.setVisibility(showStringNumber?View.VISIBLE:View.GONE);if(!showStringNumber)stringInfo.setText("");});
  stringInfo=label("Сыграй открытую струну",16,green);stringInfo.setVisibility(View.GONE);
- smartStrings=label("СТРУНЫ • сыграй открытую струну",13,green);add(tunerPage,smartStrings);
- LinearLayout tuningActions=new LinearLayout(this);tunerPage.addView(tuningActions,new LinearLayout.LayoutParams(-1,dp(46)));
+ smartStrings=label("СТРУНЫ • сыграй открытую струну",13,green);
+ LinearLayout tuningActions=new LinearLayout(this);tunerSettings.addView(tuningActions,new LinearLayout.LayoutParams(-1,dp(46)));
  Button favorites=button("Строи ★"),saveTuning=button("Сохранить строй");
  tuningActions.addView(favorites,new LinearLayout.LayoutParams(0,-1,1));tuningActions.addView(saveTuning,new LinearLayout.LayoutParams(0,-1,1));
  favorites.setOnClickListener(v->showTunings(instrumentButton));
  saveTuning.setOnClickListener(v->{android.widget.EditText name=new android.widget.EditText(this);name.setSingleLine(true);name.setHint("Название строя");new android.app.AlertDialog.Builder(this).setTitle("Сохранить текущий строй").setView(name).setPositiveButton("Сохранить",(d,w)->{String n=name.getText().toString().trim();if(n.isEmpty())return;StringBuilder bld=new StringBuilder();for(int x:activeTuning){if(bld.length()>0)bld.append(",");bld.append(x);}getPreferences(0).edit().putString("tuning_"+n,bld.toString()).apply();Toast.makeText(this,"Строй сохранён",Toast.LENGTH_SHORT).show();}).setNegativeButton("Отмена",null).show();});
- Button tuningFork=button("Камертон A4 ▶");add(tunerPage,tuningFork);tuningFork.setOnClickListener(v->{if(pitchTrack!=null){stopPitch();tuningFork.setText("Камертон A4 ▶");}else{playPitch();tuningFork.setText("Камертон ■");}});
- gauge=new Gauge();tunerPage.addView(gauge,new LinearLayout.LayoutParams(-1,dp(235)));
+ Button tuningFork=button("Камертон A4 ▶");add(tunerSettings,tuningFork);tuningFork.setOnClickListener(v->{if(pitchTrack!=null){stopPitch();tuningFork.setText("Камертон A4 ▶");}else{playPitch();tuningFork.setText("Камертон ■");}});
+ gauge=new Gauge();tunerPage.addView(gauge,new LinearLayout.LayoutParams(-1,0,1));
  add(tunerPage,stringInfo);
  note=label("—",75,Color.WHITE);add(tunerPage,note);
  freq=label("0.0 Hz",22,0xffb8c7be);add(tunerPage,freq);
  guide=label("Нажми «Включить тюнер»",16,0xffb8c7be);add(tunerPage,guide);
  tunerStart=button("Включить тюнер");add(tunerPage,tunerStart);tunerStart.setOnClickListener(v->{if(listening){stopTuner();tunerStart.setText("Включить тюнер");}else startTunerIfAllowed();});
+ add(tunerPage,smartStrings);Button tunerSettingsButton=button("⚙ Настройки тюнера");add(tunerPage,tunerSettingsButton);tunerSettings.setVisibility(View.GONE);add(tunerPage,tunerSettings);tunerSettingsButton.setOnClickListener(v->{boolean show=tunerSettings.getVisibility()!=View.VISIBLE;tunerSettings.setVisibility(show?View.VISIBLE:View.GONE);tunerSettingsButton.setText(show?"⚙ Скрыть настройки":"⚙ Настройки тюнера");});
 
 
  beatLine=new BeatLine();metroPage.addView(beatLine,new LinearLayout.LayoutParams(-1,0,1));
@@ -127,13 +130,13 @@ public class MainActivity extends Activity {
  tap.setOnClickListener(v->{long now=android.os.SystemClock.elapsedRealtime();if(lastTap>0&&now-lastTap<2500){tapIntervals.add(now-lastTap);if(tapIntervals.size()>6)tapIntervals.remove(0);long total=0;for(long interval:tapIntervals)total+=interval;int measured=(int)Math.round(60000.0/(total/(double)tapIntervals.size()));bpm=Math.max(20,Math.min(500,measured));tempo.setText(""+bpm);}else tapIntervals.clear();lastTap=now;});
  accelerate.setOnClickListener(v->{acceleration=!acceleration;accelerate.setText(acceleration?"Ускорение: +5 / 8":"Ускорение: выкл.");});
  LinearLayout controls=new LinearLayout(this);controls.setPadding(dp(7),dp(20),dp(7),dp(20));controls.setBackgroundColor(0xff222222);metroPage.addView(controls);
- Button flash=button("🔦 Фонарик: выкл.");add(metroPage,flash);flash.setOnClickListener(v->{if(!flashEnabled){if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.CAMERA},2);Toast.makeText(this,"Разреши доступ к камере и нажми фонарик ещё раз",Toast.LENGTH_LONG).show();return;}try{cameraManager=(CameraManager)getSystemService(CAMERA_SERVICE);flashCameraId=null;for(String id:cameraManager.getCameraIdList()){Boolean available=cameraManager.getCameraCharacteristics(id).get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_AVAILABLE);if(Boolean.TRUE.equals(available)){flashCameraId=id;break;}}if(flashCameraId==null){Toast.makeText(this,"Фонарик недоступен",Toast.LENGTH_SHORT).show();return;}flashEnabled=true;}catch(Exception ex){Toast.makeText(this,"Ошибка фонарика",Toast.LENGTH_SHORT).show();return;}}else{flashEnabled=false;setFlash(false);}flash.setText(flashEnabled?"🔦 Фонарик: вкл.":"🔦 Фонарик: выкл.");});
+ Button flash=button("🔦");flash.setTextSize(19);flash.setContentDescription("Фонарик: выключен");metroExtras.addView(flash,new LinearLayout.LayoutParams(dp(54),-1));flash.setOnClickListener(v->{if(!flashEnabled){if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.CAMERA},2);Toast.makeText(this,"Разреши доступ к камере и нажми фонарик ещё раз",Toast.LENGTH_LONG).show();return;}try{cameraManager=(CameraManager)getSystemService(CAMERA_SERVICE);flashCameraId=null;for(String id:cameraManager.getCameraIdList()){Boolean available=cameraManager.getCameraCharacteristics(id).get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_AVAILABLE);if(Boolean.TRUE.equals(available)){flashCameraId=id;break;}}if(flashCameraId==null){Toast.makeText(this,"Фонарик недоступен",Toast.LENGTH_SHORT).show();return;}flashEnabled=true;}catch(Exception ex){Toast.makeText(this,"Ошибка фонарика",Toast.LENGTH_SHORT).show();return;}}else{flashEnabled=false;setFlash(false);}flash.setText(flashEnabled?"🔦✓":"🔦");flash.setContentDescription(flashEnabled?"Фонарик: включён":"Фонарик: выключен");});
  Button play=button("Start"),stop=button("Stop");play.setTextSize(21);stop.setTextSize(21);play.setTextColor(0xffeeeeee);stop.setTextColor(Color.WHITE);play.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff777777));stop.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xffcf2634));
  LinearLayout.LayoutParams cp1=new LinearLayout.LayoutParams(0,dp(62),1);cp1.setMargins(0,0,dp(8),0);LinearLayout.LayoutParams cp2=new LinearLayout.LayoutParams(0,dp(62),1);cp2.setMargins(dp(8),0,0,0);controls.addView(play,cp1);controls.addView(stop,cp2);
  LinearLayout practiceRow=new LinearLayout(this);metroPage.addView(practiceRow,new LinearLayout.LayoutParams(-1,dp(43)));
  Button practice=button("Тренировка ▶");practiceStatus=label("00:00",16,green);practiceRow.addView(practice,new LinearLayout.LayoutParams(0,-1,2));practiceRow.addView(practiceStatus,new LinearLayout.LayoutParams(0,-1,1));
  practice.setOnClickListener(v->{practicing=!practicing;practice.setText(practicing?"Тренировка ■":"Тренировка ▶");if(practicing){handler.post(new Runnable(){public void run(){if(!practicing)return;practiceSeconds++;practiceStatus.setText(String.format(Locale.US,"%02d:%02d",practiceSeconds/60,practiceSeconds%60));handler.postDelayed(this,1000);}});}else{int old=getPreferences(0).getInt("practice_total",0);getPreferences(0).edit().putInt("practice_total",old+practiceSeconds).apply();practiceSeconds=0;Toast.makeText(this,"Время занятий сохранено",Toast.LENGTH_SHORT).show();}});
- practiceStatus.setOnClickListener(v->Toast.makeText(this,"Всего занятий: "+getPreferences(0).getInt("practice_total",0)/60+" мин",Toast.LENGTH_LONG).show());
+ Button history=button("История");practiceRow.addView(history,new LinearLayout.LayoutParams(0,-1,1));history.setOnClickListener(v->showPracticeHistory());practiceStatus.setOnClickListener(v->showPracticeHistory());
  pulse=label("",12,green);pulse.setVisibility(View.GONE);metroPage.addView(pulse);
  play.setOnClickListener(v->{if(!ticking){ticking=true;tickThread=new Thread(this::tick);tickThread.start();}});
  stop.setOnClickListener(v->{ticking=false;setFlash(false);beatLine.invalidate();});
@@ -172,7 +175,7 @@ public class MainActivity extends Activity {
  class BeatLine extends View{
   Paint p=new Paint(3);int position=0;long beatStart=0;
   BeatLine(){super(MainActivity.this);setBackgroundColor(0xff101215);}
-  protected void onDraw(Canvas c){super.onDraw(c);float x=getWidth()/2f;if(ticking){float progress=Math.min(1f,(android.os.SystemClock.elapsedRealtime()-beatStart)/(60000f/bpm));float sway=(float)Math.sin(progress*Math.PI);x+=((position%2==0)?1:-1)*sway*getWidth()*.30f;postInvalidateDelayed(16);}p.setColor(0xff1ab9e6);p.setStrokeWidth(dp(12));c.drawLine(x,0,x,getHeight(),p);}
+  protected void onDraw(Canvas c){super.onDraw(c);float x=getWidth()/2f;if(ticking){float progress=Math.min(1f,(android.os.SystemClock.elapsedRealtime()-beatStart)/(60000f/bpm));float sway=(float)Math.sin(progress*Math.PI);x+=((position%2==0)?1:-1)*sway*getWidth()*.30f;postInvalidateDelayed(16);}p.setColor(0xff1ab9e6);p.setStrokeWidth(dp(17));c.drawLine(x,0,x,getHeight(),p);}
  }
  void startTunerIfAllowed(){if(listening)return;if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},1);return;}listening=true;tunerStart.setText("Остановить тюнер");guide.setText("Слушаю гитару…");listenThread=new Thread(this::listen);listenThread.start();}
  @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){super.onRequestPermissionsResult(requestCode,permissions,results);if(requestCode==1&&results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED&&tunerTabActive)startTunerIfAllowed();}
